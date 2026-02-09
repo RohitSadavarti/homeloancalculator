@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home Loan EMI Calculator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            padding: 40px;
+        }
+
+        .input-section {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 15px;
+        }
+
+        .input-group {
+            margin-bottom: 25px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+            font-size: 0.95em;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: all 0.3s;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .calculate-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .calculate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .results-section {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 15px;
+        }
+
+        .result-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .result-card h3 {
+            color: #667eea;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        .result-card .value {
+            font-size: 1.8em;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .partial-payments-section {
+            margin-top: 30px;
+            padding: 25px;
+            background: #fff3cd;
+            border-radius: 15px;
+            border: 2px solid #ffc107;
+        }
+
+        .partial-payments-section h2 {
+            color: #856404;
+            margin-bottom: 20px;
+            font-size: 1.3em;
+        }
+
+        .partial-payment-entry {
+            display: grid;
+            grid-template-columns: 2fr 1fr auto;
+            gap: 10px;
+            margin-bottom: 15px;
+            align-items: end;
+        }
+
+        .partial-payment-entry input {
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 0.95em;
+        }
+
+        .add-payment-btn {
+            padding: 10px 20px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .add-payment-btn:hover {
+            background: #218838;
+        }
+
+        .remove-btn {
+            padding: 10px 15px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .remove-btn:hover {
+            background: #c82333;
+        }
+
+        .emi-schedule {
+            margin-top: 30px;
+            grid-column: 1 / -1;
+        }
+
+        .emi-schedule h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .schedule-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .schedule-table thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .schedule-table th,
+        .schedule-table td {
+            padding: 12px 15px;
+            text-align: left;
+        }
+
+        .schedule-table tbody tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        .schedule-table tbody tr:hover {
+            background: #e9ecef;
+        }
+
+        .partial-payment-row {
+            background: #d4edda !important;
+            font-weight: 600;
+        }
+
+        .scroll-container {
+            max-height: 500px;
+            overflow-y: auto;
+            border-radius: 10px;
+        }
+
+        .scroll-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .scroll-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        .scroll-container::-webkit-scrollbar-thumb {
+            background: #667eea;
+            border-radius: 4px;
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+
+            .partial-payment-entry {
+                grid-template-columns: 1fr;
+            }
+
+            .emi-schedule {
+                grid-column: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏠 Home Loan EMI Calculator</h1>
+            <p>Calculate your monthly EMI with partial payment options</p>
+        </div>
+
+        <div class="content">
+            <div class="input-section">
+                <h2 style="margin-bottom: 20px; color: #333;">Loan Details</h2>
+                
+                <div class="input-group">
+                    <label for="loanAmount">Principal Loan Amount (₹)</label>
+                    <input type="number" id="loanAmount" placeholder="e.g., 5000000" value="5000000">
+                </div>
+
+                <div class="input-group">
+                    <label for="interestRate">Annual Interest Rate (%)</label>
+                    <input type="number" id="interestRate" step="0.01" placeholder="e.g., 7.2" value="7.2">
+                </div>
+
+                <div class="input-group">
+                    <label for="loanTenure">Loan Tenure (Years)</label>
+                    <input type="number" id="loanTenure" placeholder="e.g., 20" value="20">
+                </div>
+
+                <button class="calculate-btn" onclick="calculateEMI()">Calculate EMI</button>
+            </div>
+
+            <div class="results-section">
+                <h2 style="margin-bottom: 20px; color: #333;">Results</h2>
+                
+                <div class="result-card">
+                    <h3>Monthly EMI</h3>
+                    <div class="value" id="emiAmount">₹0</div>
+                </div>
+
+                <div class="result-card">
+                    <h3>Total Interest Payable</h3>
+                    <div class="value" id="totalInterest">₹0</div>
+                </div>
+
+                <div class="result-card">
+                    <h3>Total Amount Payable</h3>
+                    <div class="value" id="totalAmount">₹0</div>
+                </div>
+            </div>
+
+            <div class="partial-payments-section" style="grid-column: 1 / -1;">
+                <h2>📝 Partial Payments</h2>
+                <p style="margin-bottom: 15px; color: #856404;">Add partial/prepayments to see the updated EMI schedule</p>
+                
+                <div id="partialPaymentsContainer">
+                    <div class="partial-payment-entry">
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; font-size: 0.9em; color: #856404;">Partial Payment Amount (₹)</label>
+                            <input type="number" class="partial-amount" placeholder="e.g., 100000">
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 5px; font-size: 0.9em; color: #856404;">Month Number</label>
+                            <input type="number" class="partial-month" placeholder="e.g., 12">
+                        </div>
+                        <button class="remove-btn" onclick="removePartialPayment(this)" style="display: none;">Remove</button>
+                    </div>
+                </div>
+
+                <button class="add-payment-btn" onclick="addPartialPayment()">+ Add Another Payment</button>
+            </div>
+
+            <div class="emi-schedule">
+                <h2>📊 EMI Payment Schedule</h2>
+                <div class="scroll-container">
+                    <table class="schedule-table">
+                        <thead>
+                            <tr>
+                                <th>Month</th>
+                                <th>EMI (₹)</th>
+                                <th>Principal (₹)</th>
+                                <th>Interest (₹)</th>
+                                <th>Partial Payment (₹)</th>
+                                <th>Outstanding (₹)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="scheduleBody">
+                            <tr>
+                                <td colspan="6" style="text-align: center; padding: 30px; color: #999;">
+                                    Click "Calculate EMI" to view the payment schedule
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function addPartialPayment() {
+            const container = document.getElementById('partialPaymentsContainer');
+            const newEntry = document.createElement('div');
+            newEntry.className = 'partial-payment-entry';
+            newEntry.innerHTML = `
+                <div>
+                    <label style="display: block; margin-bottom: 5px; font-size: 0.9em; color: #856404;">Partial Payment Amount (₹)</label>
+                    <input type="number" class="partial-amount" placeholder="e.g., 100000">
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 5px; font-size: 0.9em; color: #856404;">Month Number</label>
+                    <input type="number" class="partial-month" placeholder="e.g., 12">
+                </div>
+                <button class="remove-btn" onclick="removePartialPayment(this)">Remove</button>
+            `;
+            container.appendChild(newEntry);
+            
+            // Show remove button for first entry if there are multiple entries
+            const allEntries = container.querySelectorAll('.partial-payment-entry');
+            if (allEntries.length > 1) {
+                allEntries[0].querySelector('.remove-btn').style.display = 'block';
+            }
+        }
+
+        function removePartialPayment(button) {
+            const container = document.getElementById('partialPaymentsContainer');
+            const entry = button.closest('.partial-payment-entry');
+            entry.remove();
+            
+            // Hide remove button for first entry if only one remains
+            const allEntries = container.querySelectorAll('.partial-payment-entry');
+            if (allEntries.length === 1) {
+                allEntries[0].querySelector('.remove-btn').style.display = 'none';
+            }
+        }
+
+        function formatCurrency(amount) {
+            return '₹' + amount.toLocaleString('en-IN', { maximumFractionDigits: 2 });
+        }
+
+        function calculateEMI() {
+            const principal = parseFloat(document.getElementById('loanAmount').value);
+            const annualRate = parseFloat(document.getElementById('interestRate').value);
+            const tenureYears = parseFloat(document.getElementById('loanTenure').value);
+
+            if (!principal || !annualRate || !tenureYears) {
+                alert('Please fill in all loan details');
+                return;
+            }
+
+            const monthlyRate = annualRate / 12 / 100;
+            const tenureMonths = tenureYears * 12;
+
+            // Calculate EMI using the formula: P x R x (1+R)^N / [(1+R)^N-1]
+            const emi = principal * monthlyRate * Math.pow(1 + monthlyRate, tenureMonths) / 
+                        (Math.pow(1 + monthlyRate, tenureMonths) - 1);
+
+            // Get partial payments
+            const partialPayments = [];
+            const entries = document.querySelectorAll('.partial-payment-entry');
+            entries.forEach(entry => {
+                const amount = parseFloat(entry.querySelector('.partial-amount').value);
+                const month = parseInt(entry.querySelector('.partial-month').value);
+                if (amount && month && month > 0 && month <= tenureMonths) {
+                    partialPayments.push({ month, amount });
+                }
+            });
+
+            // Sort partial payments by month
+            partialPayments.sort((a, b) => a.month - b.month);
+
+            // Generate schedule
+            let outstanding = principal;
+            let totalInterestPaid = 0;
+            const schedule = [];
+
+            for (let month = 1; month <= tenureMonths; month++) {
+                if (outstanding <= 0) break;
+
+                const interestPayment = outstanding * monthlyRate;
+                let principalPayment = emi - interestPayment;
+                
+                // Check for partial payment this month
+                const partialPayment = partialPayments.find(p => p.month === month);
+                const partialAmount = partialPayment ? partialPayment.amount : 0;
+
+                // If partial payment exists, add it to principal reduction
+                if (partialAmount > 0) {
+                    principalPayment += partialAmount;
+                }
+
+                // Ensure we don't pay more than outstanding
+                if (principalPayment > outstanding) {
+                    principalPayment = outstanding;
+                }
+
+                outstanding -= principalPayment;
+                totalInterestPaid += interestPayment;
+
+                schedule.push({
+                    month,
+                    emi: emi,
+                    principal: principalPayment - partialAmount,
+                    interest: interestPayment,
+                    partialPayment: partialAmount,
+                    outstanding: Math.max(0, outstanding)
+                });
+
+                if (outstanding <= 0) break;
+            }
+
+            // Display results
+            document.getElementById('emiAmount').textContent = formatCurrency(emi);
+            document.getElementById('totalInterest').textContent = formatCurrency(totalInterestPaid);
+            document.getElementById('totalAmount').textContent = formatCurrency(principal + totalInterestPaid);
+
+            // Display schedule
+            const scheduleBody = document.getElementById('scheduleBody');
+            scheduleBody.innerHTML = '';
+
+            schedule.forEach(row => {
+                const tr = document.createElement('tr');
+                if (row.partialPayment > 0) {
+                    tr.className = 'partial-payment-row';
+                }
+                
+                tr.innerHTML = `
+                    <td>${row.month}</td>
+                    <td>${formatCurrency(row.emi)}</td>
+                    <td>${formatCurrency(row.principal)}</td>
+                    <td>${formatCurrency(row.interest)}</td>
+                    <td>${row.partialPayment > 0 ? formatCurrency(row.partialPayment) : '-'}</td>
+                    <td>${formatCurrency(row.outstanding)}</td>
+                `;
+                scheduleBody.appendChild(tr);
+            });
+        }
+
+        // Calculate on page load
+        window.onload = function() {
+            calculateEMI();
+        };
+    </script>
+</body>
+</html>
