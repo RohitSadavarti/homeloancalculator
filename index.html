@@ -143,6 +143,49 @@
             font-size: 1.3em;
         }
 
+        .tabs-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .tab-btn {
+            padding: 12px 24px;
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            color: #666;
+            transition: all 0.3s;
+        }
+
+        .tab-btn:hover {
+            color: #667eea;
+        }
+
+        .tab-btn.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+            padding-top: 20px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .recurring-payment-container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
         .partial-payment-entry {
             display: grid;
             grid-template-columns: 2fr 1fr auto;
@@ -316,21 +359,62 @@
                 <h2>📝 Partial Payments</h2>
                 <p style="margin-bottom: 15px; color: #856404;">Add partial/prepayments to see the updated EMI schedule</p>
                 
-                <div id="partialPaymentsContainer">
-                    <div class="partial-payment-entry">
-                        <div>
-                            <label style="display: block; margin-bottom: 5px; font-size: 0.9em; color: #856404;">Partial Payment Amount (₹)</label>
-                            <input type="number" class="partial-amount" placeholder="e.g., 100000" oninput="calculateEMI()">
-                        </div>
-                        <div>
-                            <label style="display: block; margin-bottom: 5px; font-size: 0.9em; color: #856404;">Month Number</label>
-                            <input type="number" class="partial-month" placeholder="e.g., 12" oninput="calculateEMI()">
-                        </div>
-                        <button class="remove-btn" onclick="removePartialPayment(this)" style="display: none;">Remove</button>
-                    </div>
+                <!-- Tabs -->
+                <div class="tabs-container">
+                    <button class="tab-btn active" onclick="switchTab('oneTime')">One-Time Payments</button>
+                    <button class="tab-btn" onclick="switchTab('recurring')">Recurring Fixed Payments</button>
                 </div>
 
-                <button class="add-payment-btn" onclick="addPartialPayment()">+ Add Another Payment</button>
+                <!-- One-Time Payments Tab -->
+                <div id="oneTimeTab" class="tab-content active">
+                    <div id="partialPaymentsContainer">
+                        <div class="partial-payment-entry">
+                            <div>
+                                <label style="display: block; margin-bottom: 5px; font-size: 0.9em; color: #856404;">Partial Payment Amount (₹)</label>
+                                <input type="number" class="partial-amount" placeholder="e.g., 100000" oninput="calculateEMI()">
+                            </div>
+                            <div>
+                                <label style="display: block; margin-bottom: 5px; font-size: 0.9em; color: #856404;">Month Number</label>
+                                <input type="number" class="partial-month" placeholder="e.g., 12" oninput="calculateEMI()">
+                            </div>
+                            <button class="remove-btn" onclick="removePartialPayment(this)" style="display: none;">Remove</button>
+                        </div>
+                    </div>
+                    <button class="add-payment-btn" onclick="addPartialPayment()">+ Add Another Payment</button>
+                </div>
+
+                <!-- Recurring Fixed Payments Tab -->
+                <div id="recurringTab" class="tab-content">
+                    <div class="recurring-payment-container">
+                        <div class="input-group" style="margin-bottom: 15px;">
+                            <label for="recurringAmount">Fixed Monthly Payment Amount (₹)</label>
+                            <input type="number" id="recurringAmount" placeholder="e.g., 2000" oninput="calculateEMI()">
+                        </div>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+                            <div class="input-group">
+                                <label for="recurringStartMonth">Start Month</label>
+                                <input type="number" id="recurringStartMonth" placeholder="e.g., 1" value="1" min="1" oninput="calculateEMI()">
+                            </div>
+                            
+                            <div class="input-group">
+                                <label for="recurringEndMonth">End Month</label>
+                                <input type="number" id="recurringEndMonth" placeholder="e.g., 120" oninput="calculateEMI()">
+                            </div>
+                        </div>
+
+                        <div class="input-group">
+                            <label for="recurringYears">Or Set Duration (Years)</label>
+                            <input type="number" id="recurringYears" placeholder="e.g., 10" oninput="setRecurringYears()">
+                        </div>
+
+                        <div style="background: #e7f3ff; padding: 15px; border-radius: 8px; margin-top: 15px; border-left: 4px solid #2196F3;">
+                            <p style="color: #1976D2; font-size: 0.9em; margin: 0;">
+                                💡 <strong>Tip:</strong> This will add the fixed amount to your regular EMI every month for the specified period, helping you pay off your loan faster!
+                            </p>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div class="emi-schedule">
@@ -354,6 +438,16 @@
                                 </td>
                             </tr>
                         </tbody>
+                        <tfoot id="scheduleFooter" style="display: none;">
+                            <tr style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; font-weight: bold; font-size: 1.1em;">
+                                <td>TOTAL</td>
+                                <td id="totalEMI">₹0</td>
+                                <td id="totalPrincipal">₹0</td>
+                                <td id="totalInterestFooter">₹0</td>
+                                <td id="totalPartialPayments">₹0</td>
+                                <td style="opacity: 0.5;">-</td>
+                            </tr>
+                        </tfoot>
                     </table>
                 </div>
             </div>
@@ -400,6 +494,35 @@
             calculateEMI();
         }
 
+        function switchTab(tabName) {
+            // Update tab buttons
+            const tabBtns = document.querySelectorAll('.tab-btn');
+            tabBtns.forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // Update tab content
+            const tabContents = document.querySelectorAll('.tab-content');
+            tabContents.forEach(content => content.classList.remove('active'));
+
+            if (tabName === 'oneTime') {
+                document.getElementById('oneTimeTab').classList.add('active');
+            } else {
+                document.getElementById('recurringTab').classList.add('active');
+            }
+
+            // Recalculate
+            calculateEMI();
+        }
+
+        function setRecurringYears() {
+            const years = parseFloat(document.getElementById('recurringYears').value);
+            if (years) {
+                const startMonth = parseInt(document.getElementById('recurringStartMonth').value) || 1;
+                document.getElementById('recurringEndMonth').value = startMonth + (years * 12) - 1;
+                calculateEMI();
+            }
+        }
+
         function formatCurrency(amount) {
             return '₹' + amount.toLocaleString('en-IN', { maximumFractionDigits: 2 });
         }
@@ -410,8 +533,7 @@
             const tenureYears = parseFloat(document.getElementById('loanTenure').value);
 
             if (!principal || !annualRate || !tenureYears) {
-                alert('Please fill in all loan details');
-                return;
+                return; // Don't show alert, just return silently
             }
 
             const monthlyRate = annualRate / 12 / 100;
@@ -421,7 +543,7 @@
             let emi = principal * monthlyRate * Math.pow(1 + monthlyRate, tenureMonths) / 
                         (Math.pow(1 + monthlyRate, tenureMonths) - 1);
 
-            // Get partial payments
+            // Get one-time partial payments
             const partialPayments = [];
             const entries = document.querySelectorAll('.partial-payment-entry');
             entries.forEach(entry => {
@@ -432,6 +554,11 @@
                 }
             });
 
+            // Get recurring payment details
+            const recurringAmount = parseFloat(document.getElementById('recurringAmount').value) || 0;
+            const recurringStartMonth = parseInt(document.getElementById('recurringStartMonth').value) || 1;
+            const recurringEndMonth = parseInt(document.getElementById('recurringEndMonth').value) || 0;
+
             // Sort partial payments by month
             partialPayments.sort((a, b) => a.month - b.month);
 
@@ -439,6 +566,7 @@
             let outstanding = principal;
             let totalInterestPaid = 0;
             let totalPrincipalPaid = 0;
+            let totalRecurringPayments = 0;
             const schedule = [];
             let currentEMI = emi;
             let remainingMonths = tenureMonths;
@@ -449,9 +577,17 @@
                 const interestPayment = outstanding * monthlyRate;
                 let principalPayment = currentEMI - interestPayment;
                 
-                // Check for partial payment this month
+                // Check for one-time partial payment this month
                 const partialPayment = partialPayments.find(p => p.month === month);
-                const partialAmount = partialPayment ? partialPayment.amount : 0;
+                const oneTimePartialAmount = partialPayment ? partialPayment.amount : 0;
+
+                // Check for recurring payment this month
+                let recurringPaymentAmount = 0;
+                if (recurringAmount > 0 && month >= recurringStartMonth && month <= recurringEndMonth) {
+                    recurringPaymentAmount = recurringAmount;
+                }
+
+                const totalPartialPayment = oneTimePartialAmount + recurringPaymentAmount;
 
                 // Ensure principal payment doesn't exceed outstanding
                 if (principalPayment > outstanding) {
@@ -468,14 +604,15 @@
                     emi: currentEMI,
                     principal: principalPayment,
                     interest: interestPayment,
-                    partialPayment: partialAmount,
+                    partialPayment: totalPartialPayment,
                     outstanding: Math.max(0, outstanding)
                 });
 
                 // If partial payment exists, deduct it from outstanding and recalculate EMI
-                if (partialAmount > 0 && outstanding > 0) {
-                    outstanding -= partialAmount;
-                    totalPrincipalPaid += partialAmount;
+                if (totalPartialPayment > 0 && outstanding > 0) {
+                    outstanding -= totalPartialPayment;
+                    totalPrincipalPaid += totalPartialPayment;
+                    totalRecurringPayments += recurringPaymentAmount;
                     
                     if (outstanding > 0) {
                         // Recalculate EMI for remaining tenure
@@ -498,6 +635,12 @@
             document.getElementById('totalInterest').textContent = formatCurrency(totalInterestPaid);
             document.getElementById('totalAmount').textContent = formatCurrency(totalPrincipalPaid + totalInterestPaid);
 
+            // Calculate totals for footer
+            let totalEMISum = 0;
+            let totalPrincipalSum = 0;
+            let totalInterestSum = 0;
+            let totalPartialSum = 0;
+
             // Display schedule
             const scheduleBody = document.getElementById('scheduleBody');
             scheduleBody.innerHTML = '';
@@ -517,7 +660,20 @@
                     <td>${formatCurrency(row.outstanding)}</td>
                 `;
                 scheduleBody.appendChild(tr);
+
+                // Add to totals
+                totalEMISum += row.emi;
+                totalPrincipalSum += row.principal;
+                totalInterestSum += row.interest;
+                totalPartialSum += row.partialPayment;
             });
+
+            // Display totals in footer
+            document.getElementById('scheduleFooter').style.display = 'table-footer-group';
+            document.getElementById('totalEMI').textContent = formatCurrency(totalEMISum);
+            document.getElementById('totalPrincipal').textContent = formatCurrency(totalPrincipalSum);
+            document.getElementById('totalInterestFooter').textContent = formatCurrency(totalInterestSum);
+            document.getElementById('totalPartialPayments').textContent = formatCurrency(totalPartialSum);
         }
 
         // Calculate on page load
