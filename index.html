@@ -277,17 +277,17 @@
                 
                 <div class="input-group">
                     <label for="loanAmount">Principal Loan Amount (₹)</label>
-                    <input type="number" id="loanAmount" placeholder="e.g., 5000000" value="5000000">
+                    <input type="number" id="loanAmount" placeholder="e.g., 5000000" value="5000000" oninput="calculateEMI()">
                 </div>
 
                 <div class="input-group">
                     <label for="interestRate">Annual Interest Rate (%)</label>
-                    <input type="number" id="interestRate" step="0.01" placeholder="e.g., 7.2" value="7.2">
+                    <input type="number" id="interestRate" step="0.01" placeholder="e.g., 7.2" value="7.2" oninput="calculateEMI()">
                 </div>
 
                 <div class="input-group">
                     <label for="loanTenure">Loan Tenure (Years)</label>
-                    <input type="number" id="loanTenure" placeholder="e.g., 20" value="20">
+                    <input type="number" id="loanTenure" placeholder="e.g., 20" value="20" oninput="calculateEMI()">
                 </div>
 
                 <button class="calculate-btn" onclick="calculateEMI()">Calculate EMI</button>
@@ -320,11 +320,11 @@
                     <div class="partial-payment-entry">
                         <div>
                             <label style="display: block; margin-bottom: 5px; font-size: 0.9em; color: #856404;">Partial Payment Amount (₹)</label>
-                            <input type="number" class="partial-amount" placeholder="e.g., 100000">
+                            <input type="number" class="partial-amount" placeholder="e.g., 100000" oninput="calculateEMI()">
                         </div>
                         <div>
                             <label style="display: block; margin-bottom: 5px; font-size: 0.9em; color: #856404;">Month Number</label>
-                            <input type="number" class="partial-month" placeholder="e.g., 12">
+                            <input type="number" class="partial-month" placeholder="e.g., 12" oninput="calculateEMI()">
                         </div>
                         <button class="remove-btn" onclick="removePartialPayment(this)" style="display: none;">Remove</button>
                     </div>
@@ -368,11 +368,11 @@
             newEntry.innerHTML = `
                 <div>
                     <label style="display: block; margin-bottom: 5px; font-size: 0.9em; color: #856404;">Partial Payment Amount (₹)</label>
-                    <input type="number" class="partial-amount" placeholder="e.g., 100000">
+                    <input type="number" class="partial-amount" placeholder="e.g., 100000" oninput="calculateEMI()">
                 </div>
                 <div>
                     <label style="display: block; margin-bottom: 5px; font-size: 0.9em; color: #856404;">Month Number</label>
-                    <input type="number" class="partial-month" placeholder="e.g., 12">
+                    <input type="number" class="partial-month" placeholder="e.g., 12" oninput="calculateEMI()">
                 </div>
                 <button class="remove-btn" onclick="removePartialPayment(this)">Remove</button>
             `;
@@ -395,6 +395,9 @@
             if (allEntries.length === 1) {
                 allEntries[0].querySelector('.remove-btn').style.display = 'none';
             }
+            
+            // Recalculate after removing
+            calculateEMI();
         }
 
         function formatCurrency(amount) {
@@ -414,8 +417,8 @@
             const monthlyRate = annualRate / 12 / 100;
             const tenureMonths = tenureYears * 12;
 
-            // Calculate EMI using the formula: P x R x (1+R)^N / [(1+R)^N-1]
-            const emi = principal * monthlyRate * Math.pow(1 + monthlyRate, tenureMonths) / 
+            // Calculate initial EMI using the formula: P x R x (1+R)^N / [(1+R)^N-1]
+            let emi = principal * monthlyRate * Math.pow(1 + monthlyRate, tenureMonths) / 
                         (Math.pow(1 + monthlyRate, tenureMonths) - 1);
 
             // Get partial payments
@@ -435,47 +438,65 @@
             // Generate schedule
             let outstanding = principal;
             let totalInterestPaid = 0;
+            let totalPrincipalPaid = 0;
             const schedule = [];
+            let currentEMI = emi;
+            let remainingMonths = tenureMonths;
 
             for (let month = 1; month <= tenureMonths; month++) {
-                if (outstanding <= 0) break;
+                if (outstanding <= 0.01) break; // Break if loan is paid off
 
                 const interestPayment = outstanding * monthlyRate;
-                let principalPayment = emi - interestPayment;
+                let principalPayment = currentEMI - interestPayment;
                 
                 // Check for partial payment this month
                 const partialPayment = partialPayments.find(p => p.month === month);
                 const partialAmount = partialPayment ? partialPayment.amount : 0;
 
-                // If partial payment exists, add it to principal reduction
-                if (partialAmount > 0) {
-                    principalPayment += partialAmount;
-                }
-
-                // Ensure we don't pay more than outstanding
+                // Ensure principal payment doesn't exceed outstanding
                 if (principalPayment > outstanding) {
                     principalPayment = outstanding;
+                    currentEMI = principalPayment + interestPayment;
                 }
 
                 outstanding -= principalPayment;
                 totalInterestPaid += interestPayment;
+                totalPrincipalPaid += principalPayment;
 
                 schedule.push({
                     month,
-                    emi: emi,
-                    principal: principalPayment - partialAmount,
+                    emi: currentEMI,
+                    principal: principalPayment,
                     interest: interestPayment,
                     partialPayment: partialAmount,
                     outstanding: Math.max(0, outstanding)
                 });
 
-                if (outstanding <= 0) break;
+                // If partial payment exists, deduct it from outstanding and recalculate EMI
+                if (partialAmount > 0 && outstanding > 0) {
+                    outstanding -= partialAmount;
+                    totalPrincipalPaid += partialAmount;
+                    
+                    if (outstanding > 0) {
+                        // Recalculate EMI for remaining tenure
+                        remainingMonths = tenureMonths - month;
+                        if (remainingMonths > 0) {
+                            currentEMI = outstanding * monthlyRate * Math.pow(1 + monthlyRate, remainingMonths) / 
+                                        (Math.pow(1 + monthlyRate, remainingMonths) - 1);
+                        }
+                    }
+                    
+                    // Update the outstanding in current month's schedule
+                    schedule[schedule.length - 1].outstanding = Math.max(0, outstanding);
+                }
+
+                if (outstanding <= 0.01) break;
             }
 
-            // Display results
+            // Display results - use the initial EMI for display
             document.getElementById('emiAmount').textContent = formatCurrency(emi);
             document.getElementById('totalInterest').textContent = formatCurrency(totalInterestPaid);
-            document.getElementById('totalAmount').textContent = formatCurrency(principal + totalInterestPaid);
+            document.getElementById('totalAmount').textContent = formatCurrency(totalPrincipalPaid + totalInterestPaid);
 
             // Display schedule
             const scheduleBody = document.getElementById('scheduleBody');
